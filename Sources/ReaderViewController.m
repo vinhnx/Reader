@@ -65,6 +65,8 @@
 	NSDate *lastHideTime;
 
 	BOOL ignoreDidScroll;
+    
+    BOOL shouldArchieveDocumentOnClose;
 }
 
 #pragma mark - Constants
@@ -212,7 +214,8 @@
 
 	if (page != currentPage) // Only if on different page
 	{
-		currentPage = page; document.pageNumber = [NSNumber numberWithInteger:page];
+		currentPage = page;
+        document.pageNumber = [NSNumber numberWithInteger:page];
 
 		[contentViews enumerateKeysAndObjectsUsingBlock: // Enumerate content views
 			^(NSNumber *key, ReaderContentView *contentView, BOOL *stop)
@@ -233,7 +236,8 @@
 	{
 		if ((page < minimumPage) || (page > maximumPage)) return;
 
-		currentPage = page; document.pageNumber = [NSNumber numberWithInteger:page];
+		currentPage = page;
+        document.pageNumber = [NSNumber numberWithInteger:page];
 
 		CGPoint contentOffset = CGPointMake((theScrollView.bounds.size.width * (page - 1)), 0.0f);
 
@@ -268,7 +272,9 @@
 {
 	if (printInteraction != nil) [printInteraction dismissAnimated:NO];
 
-	[document archiveDocumentProperties]; // Save any ReaderDocument changes
+    if (shouldArchieveDocumentOnClose) {
+        [document archiveDocumentProperties]; // Save any ReaderDocument changes
+    }
 
 	[[ReaderThumbQueue sharedInstance] cancelOperationsWithGUID:document.guid];
 
@@ -288,31 +294,38 @@
 
 - (instancetype)initWithReaderDocument:(ReaderDocument *)object
 {
-	if ((self = [super initWithNibName:nil bundle:nil])) // Initialize superclass
-	{
-		if ((object != nil) && ([object isKindOfClass:[ReaderDocument class]])) // Valid object
-		{
-			userInterfaceIdiom = [UIDevice currentDevice].userInterfaceIdiom; // User interface idiom
+	return [self initWithReaderDocument:object shouldArchieveDocumentOnClose:YES];
+}
 
-			NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter]; // Default notification center
-
-			[notificationCenter addObserver:self selector:@selector(applicationWillResign:) name:UIApplicationWillTerminateNotification object:nil];
-
-			[notificationCenter addObserver:self selector:@selector(applicationWillResign:) name:UIApplicationWillResignActiveNotification object:nil];
-
-			scrollViewOutset = ((userInterfaceIdiom == UIUserInterfaceIdiomPad) ? SCROLLVIEW_OUTSET_LARGE : SCROLLVIEW_OUTSET_SMALL);
-
-			[object updateDocumentProperties]; document = object; // Retain the supplied ReaderDocument object for our use
-
-			[ReaderThumbCache touchThumbCacheWithGUID:object.guid]; // Touch the document thumb cache directory
-		}
-		else // Invalid ReaderDocument object
-		{
-			self = nil;
-		}
-	}
-
-	return self;
+- (instancetype)initWithReaderDocument:(ReaderDocument *)object shouldArchieveDocumentOnClose:(BOOL)shouldArchieve
+{
+    if ((self = [super initWithNibName:nil bundle:nil])) // Initialize superclass
+    {
+        if ((object != nil) && ([object isKindOfClass:[ReaderDocument class]])) // Valid object
+        {
+            userInterfaceIdiom = [UIDevice currentDevice].userInterfaceIdiom; // User interface idiom
+            
+            NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter]; // Default notification center
+            
+            [notificationCenter addObserver:self selector:@selector(applicationWillResign:) name:UIApplicationWillTerminateNotification object:nil];
+            
+            [notificationCenter addObserver:self selector:@selector(applicationWillResign:) name:UIApplicationWillResignActiveNotification object:nil];
+            
+            scrollViewOutset = ((userInterfaceIdiom == UIUserInterfaceIdiomPad) ? SCROLLVIEW_OUTSET_LARGE : SCROLLVIEW_OUTSET_SMALL);
+            
+            [object updateDocumentProperties]; document = object; // Retain the supplied ReaderDocument object for our use
+            
+            [ReaderThumbCache touchThumbCacheWithGUID:object.guid]; // Touch the document thumb cache directory
+            
+            shouldArchieveDocumentOnClose = shouldArchieve;
+        }
+        else // Invalid ReaderDocument object
+        {
+            self = nil;
+        }
+    }
+    
+    return self;
 }
 
 - (void)dealloc

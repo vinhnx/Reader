@@ -42,5 +42,7 @@
 @property (nonatomic, weak, readwrite) id <ReaderViewControllerDelegate> delegate;
 
 - (instancetype)initWithReaderDocument:(ReaderDocument *)object;
+- (instancetype)initWithReaderDocument:(ReaderDocument *)object
+         shouldArchieveDocumentOnClose:(BOOL)shouldArchieveDocumentOnClose;;
 
 @end
