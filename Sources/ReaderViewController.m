@@ -272,8 +272,12 @@
 {
 	if (printInteraction != nil) [printInteraction dismissAnimated:NO];
 
+    
     if (shouldArchieveDocumentOnClose) {
         [document archiveDocumentProperties]; // Save any ReaderDocument changes
+    }
+    else {
+        document = nil;
     }
 
 	[[ReaderThumbQueue sharedInstance] cancelOperationsWithGUID:document.guid];
